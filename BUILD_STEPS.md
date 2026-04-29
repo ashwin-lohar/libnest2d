@@ -114,15 +114,103 @@ set_property(TARGET your_target PROPERTY CXX_STANDARD 20)
 set_property(TARGET your_target PROPERTY CXX_STANDARD_REQUIRED ON)
 ```
 
-The easiest CMake integration is to add this repository as a subdirectory:
+## Recommended Parent-Project Integration
+
+If libnest2d lives inside another project, for example:
+
+```text
+external/libnest2d
+```
+
+the parent project can build libnest2d automatically. Put this before the
+parent target links against libnest2d:
 
 ```cmake
-add_subdirectory(path/to/libnest2d)
+set(LIBNEST2D_HEADER_ONLY OFF CACHE BOOL "" FORCE)
+set(RP_ENABLE_DOWNLOADING ON CACHE BOOL "" FORCE)
+
+set(BOOST_ROOT "C:/Apps/boost_1_78_0" CACHE PATH "" FORCE)
+set(BOOST_INCLUDEDIR "C:/Apps/boost_1_78_0" CACHE PATH "" FORCE)
+set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "" FORCE)
+set(Boost_HEADERS_FOUND ON CACHE BOOL "" FORCE)
+
+set(RP_INSTALL_PREFIX
+    "${CMAKE_BINARY_DIR}/libnest2d-dependencies"
+    CACHE STRING "" FORCE
+)
+
+add_subdirectory(
+    "${CMAKE_SOURCE_DIR}/external/libnest2d"
+    "${CMAKE_BINARY_DIR}/libnest2d-build"
+)
+```
+
+Then link your target to the CMake target:
+
+```cmake
+target_link_libraries(your_target PRIVATE libnest2d)
+```
+
+Keep these compile definitions on your consuming target:
+
+```cmake
+target_compile_definitions(your_target PRIVATE
+    LIBNEST2D_GEOMETRIES_clipper
+    LIBNEST2D_OPTIMIZER_nlopt
+    LIBNEST2D_STATIC
+)
+```
+
+With this approach, the parent build creates libnest2d under the parent build
+directory, not under `external/libnest2d/build-msvc`. The parent project should
+not link hardcoded paths such as:
+
+```text
+external/libnest2d/build-msvc/Release/libnest2d_clipper_nlopt.lib
+```
+
+The first configure/build can take longer because CMake downloads and builds
+Clipper and NLopt.
+
+## Header-Only Parent-Project Integration
+
+If you do not want to link the compiled `libnest2d` static library, enable the
+header-only target and link `libnest2d_headeronly`:
+
+```cmake
+set(LIBNEST2D_HEADER_ONLY ON CACHE BOOL "" FORCE)
+set(RP_ENABLE_DOWNLOADING ON CACHE BOOL "" FORCE)
+
+set(BOOST_ROOT "C:/Apps/boost_1_78_0" CACHE PATH "" FORCE)
+set(BOOST_INCLUDEDIR "C:/Apps/boost_1_78_0" CACHE PATH "" FORCE)
+set(Boost_NO_SYSTEM_PATHS ON CACHE BOOL "" FORCE)
+set(Boost_HEADERS_FOUND ON CACHE BOOL "" FORCE)
+
+set(RP_INSTALL_PREFIX
+    "${CMAKE_BINARY_DIR}/libnest2d-dependencies"
+    CACHE STRING "" FORCE
+)
+
+add_subdirectory(
+    "${CMAKE_SOURCE_DIR}/external/libnest2d"
+    "${CMAKE_BINARY_DIR}/libnest2d-build"
+)
+
+target_compile_definitions(your_target PRIVATE
+    LIBNEST2D_GEOMETRIES_clipper
+    LIBNEST2D_OPTIMIZER_nlopt
+)
+
 target_link_libraries(your_target PRIVATE libnest2d_headeronly)
 ```
 
-If you want to use the compiled MSVC static library from this build instead,
-add the include directories and link the library plus its dependencies:
+Do not define `LIBNEST2D_STATIC` for this mode. Clipper and NLopt are still
+compiled and linked as dependencies by the `libnest2d_headeronly` target.
+
+## Manual Static-Library Integration
+
+If you built libnest2d separately with the MSVC commands above, add the include
+directories and link the library plus its dependencies:
 
 ```cmake
 target_include_directories(your_target PRIVATE

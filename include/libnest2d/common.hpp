@@ -156,6 +156,24 @@ public:
     inline double toRadians() { return Radians(*this);}
 };
 
+inline bool operator==(const Radians& lhs, const Radians& rhs) {
+    auto diff = std::abs(static_cast<double>(lhs) - static_cast<double>(rhs));
+    return diff < 0.0001;
+}
+
+inline bool operator!=(const Radians& lhs, const Radians& rhs) {
+    return !(lhs == rhs);
+}
+
+inline bool operator==(const Degrees& lhs, const Degrees& rhs) {
+    auto diff = std::abs(static_cast<double>(lhs) - static_cast<double>(rhs));
+    return diff < 0.0001;
+}
+
+inline bool operator!=(const Degrees& lhs, const Degrees& rhs) {
+    return !(lhs == rhs);
+}
+
 inline bool operator==(const Degrees& deg, const Radians& rads) {
     Degrees deg2 = rads;
     auto diff = std::abs(deg - deg2);
@@ -164,6 +182,14 @@ inline bool operator==(const Degrees& deg, const Radians& rads) {
 
 inline bool operator==(const Radians& rads, const Degrees& deg) {
     return deg == rads;
+}
+
+inline bool operator!=(const Degrees& deg, const Radians& rads) {
+    return !(deg == rads);
+}
+
+inline bool operator!=(const Radians& rads, const Degrees& deg) {
+    return !(rads == deg);
 }
 
 inline Radians::operator Degrees() { return *this * 180/Pi; }
