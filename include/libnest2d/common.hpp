@@ -80,7 +80,11 @@ using enable_if_t = typename std::enable_if<B, T>::type;
 
 template<class F, class...Args>
 struct invoke_result {
+#if defined(__cpp_lib_is_invocable) && __cpp_lib_is_invocable >= 201703L
+    using type = typename std::invoke_result<F, Args...>::type;
+#else
     using type = typename std::result_of<F(Args...)>::type;
+#endif
 };
 
 template<class F, class...Args>

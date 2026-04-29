@@ -128,6 +128,7 @@ add the include directories and link the library plus its dependencies:
 target_include_directories(your_target PRIVATE
     path/to/libnest2d/include
     path/to/libnest2d/build-msvc/dependencies/include
+    path/to/libnest2d/build-msvc/dependencies/include/polyclipping
     C:/Apps/boost_1_78_0
 )
 
@@ -162,6 +163,7 @@ Make sure your compiler can find:
 
 - `include`
 - `build-msvc/dependencies/include`
+- `build-msvc/dependencies/include/polyclipping`
 - the Boost include directory, for example `C:/Apps/boost_1_78_0`
 
 The dependency include directory contains the generated/installed headers for
@@ -175,6 +177,8 @@ This repository needed two small compatibility updates for the MSVC build:
   `msvc-14.4`.
 - `external/+NLopt` applies a small patch to NLopt 2.6.1 so its old Stogo code
   builds with current MSVC.
+- `include/libnest2d/common.hpp` uses `std::invoke_result` for C++17 and newer,
+  because `std::result_of` was removed in C++20.
 
 ## Minimal Example
 
