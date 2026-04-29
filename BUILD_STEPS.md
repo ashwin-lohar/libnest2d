@@ -1,12 +1,12 @@
 # Build Steps
 
-These notes describe the build that worked on this machine with Strawberry
-MinGW and CMake.
+These notes describe the builds that worked on this machine. Use the MSVC build
+if your consuming project is built with Visual Studio/MSVC.
 
 ## Requirements
 
 - CMake
-- MinGW `mingw32-make`
+- Visual Studio 2022 with MSVC, or MinGW `mingw32-make`
 - A C++ compiler with C++11 support
 - Boost headers
 
@@ -16,7 +16,50 @@ On this machine, Boost was available at:
 C:\Apps\boost_1_78_0
 ```
 
-## Build The Static Library
+## Recommended: Build With MSVC
+
+Use this if your other project uses MSVC.
+
+From the repository root:
+
+```powershell
+cmake -S . -B build-msvc -G "Visual Studio 17 2022" -A x64 `
+  -DLIBNEST2D_HEADER_ONLY=OFF `
+  -DRP_ENABLE_DOWNLOADING=ON `
+  -DBOOST_ROOT=C:/Apps/boost_1_78_0 `
+  -DBOOST_INCLUDEDIR=C:/Apps/boost_1_78_0 `
+  -DBoost_NO_SYSTEM_PATHS=ON `
+  -DBoost_HEADERS_FOUND=ON `
+  -DRP_INSTALL_PREFIX=C:/Users/ashwi/Desktop/libnest2d/build-msvc/dependencies
+```
+
+Then build Release:
+
+```powershell
+cmake --build build-msvc --config Release
+```
+
+The resulting MSVC static library is:
+
+```text
+build-msvc/Release/libnest2d_clipper_nlopt.lib
+```
+
+The MSVC-built dependency libraries are:
+
+```text
+build-msvc/dependencies/lib/polyclipping.lib
+build-msvc/dependencies/lib/nlopt.lib
+```
+
+Debug dependency libraries are also generated:
+
+```text
+build-msvc/dependencies/lib/polyclippingd.lib
+build-msvc/dependencies/lib/nloptd.lib
+```
+
+## Alternative: Build With MinGW
 
 From the repository root:
 
@@ -78,20 +121,20 @@ add_subdirectory(path/to/libnest2d)
 target_link_libraries(your_target PRIVATE libnest2d_headeronly)
 ```
 
-If you want to use the compiled static library from this build instead, add the
-include directories and link the library plus its dependencies:
+If you want to use the compiled MSVC static library from this build instead,
+add the include directories and link the library plus its dependencies:
 
 ```cmake
 target_include_directories(your_target PRIVATE
     path/to/libnest2d/include
-    path/to/libnest2d/build-mingw-apps/dependencies/include
+    path/to/libnest2d/build-msvc/dependencies/include
     C:/Apps/boost_1_78_0
 )
 
 target_link_libraries(your_target PRIVATE
-    path/to/libnest2d/build-mingw-apps/libnest2d_clipper_nlopt.a
-    path/to/libnest2d/build-mingw-apps/dependencies/lib/libpolyclipping.a
-    path/to/libnest2d/build-mingw-apps/dependencies/lib/libnlopt.a
+    path/to/libnest2d/build-msvc/Release/libnest2d_clipper_nlopt.lib
+    path/to/libnest2d/build-msvc/dependencies/lib/polyclipping.lib
+    path/to/libnest2d/build-msvc/dependencies/lib/nlopt.lib
 )
 
 target_compile_definitions(your_target PRIVATE
@@ -103,10 +146,9 @@ target_compile_definitions(your_target PRIVATE
 
 Use forward slashes or escaped backslashes in CMake paths.
 
-Important: use the same compiler family for your project and this static
-library. The library built here used MinGW/GCC, so a MinGW/GCC C++20 project is
-the safest match. If your other project uses MSVC, rebuild Libnest2D with MSVC
-instead of linking the MinGW `.a` file.
+Important: use the same compiler family for your project and the static library.
+For an MSVC project, use the `build-msvc` `.lib` files. For a MinGW project, use
+the `build-mingw-apps` `.a` files.
 
 ## Header Files You Need
 
@@ -119,11 +161,20 @@ For normal use, include:
 Make sure your compiler can find:
 
 - `include`
-- `build-mingw-apps/dependencies/include`
+- `build-msvc/dependencies/include`
 - the Boost include directory, for example `C:/Apps/boost_1_78_0`
 
 The dependency include directory contains the generated/installed headers for
 Clipper and NLopt.
+
+## Notes For Modern Visual Studio
+
+This repository needed two small compatibility updates for the MSVC build:
+
+- `external/+Boost/CMakeLists.txt` now recognizes MSVC 19.4x as Boost toolset
+  `msvc-14.4`.
+- `external/+NLopt` applies a small patch to NLopt 2.6.1 so its old Stogo code
+  builds with current MSVC.
 
 ## Minimal Example
 
